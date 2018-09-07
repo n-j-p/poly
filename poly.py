@@ -12,6 +12,11 @@ class Poly:
         self.c = coeffs
         self.content = 'int'
     def __repr__(self):
+        def nxt_nz(alist, cur_ix):
+            for i,x in enumerate(alist[(cur_ix+1):]):
+                if x != 0:
+                    return cur_ix + i + 1
+            return None
         if len(self.c) == 0: # constant (zero) polynomial
             return "0"
         elif len(self.c) == 1:
@@ -26,7 +31,6 @@ class Poly:
                     rep = "-x"
                 else:
                     rep = "%dx" % self.c[0]
-
             else:
                 if self.c[0] == 1:
                     rep = "x**%d" % p
@@ -59,37 +63,6 @@ class Poly:
                 nxt = nxt_nz(self.c, nxt)
             return rep
 
-
-        if False:
-            ix = nxt
-            print(nxt)
-            import pdb
-            pdb.set_trace()
-            while not nxt is None and ix < len(self.c)-1:
-                print(rep)
-                if self.c[ix] < 0:
-                    rep += " - "
-                else:
-                    rep += " + "
-                if ix == len(self.c) - 1:
-                    rep += str(abs(self.c[ix]))
-                elif ix == len(self.c) - 2:
-                    rep += "%dx" % abs(self.c[ix])
-                else:
-                    rep += "%dx**%d" % (abs(self.c[ix]), len(self.c)-ix-1)
-                nxt = nxt_nz(self.c, ix)
-                if nxt is None:
-                    return rep
-                ix += nxt
-                print(nxt,ix)
-                if ix == 3:
-                    pdb.set_trace()
-            if not nxt is None:
-                if self.c[-1] > 0:
-                    rep += " + %d" % abs(self.c[-1])
-                else:
-                    rep += " - %d" % abs(self.c[-1])
-            return rep
 
 class Fraction:
     ### Base methods
@@ -169,22 +142,17 @@ def _eeuclid(x,y):
 
     assert x > 0
     assert y > 0
-
     if x > y:
         x,y=y,x
-    
     olda = 1
     oldb = 0
     oldg = x
     u = 0
     v = 1
     w = y
-
     g = oldg
-
     while w > 0:
         q = g // w
-
         a = u
         b = v
         g = w
@@ -197,9 +165,4 @@ def _eeuclid(x,y):
         oldg = g
     return (a,b,g)
 
-def nxt_nz(alist, cur_ix):
-    for i,x in enumerate(alist[(cur_ix+1):]):
-        if x != 0:
-            return cur_ix + i + 1
-    return None
     
