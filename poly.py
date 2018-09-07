@@ -1,4 +1,6 @@
 class Poly:
+    ### Polynomials are represented as a list with
+    ### leading coefficient (highest power of x) at position zero.
     def __init__(self, coeffs):
         assert coeffs.__class__ == list or coeffs.__class__ == tuple
         for a in coeffs:
@@ -10,6 +12,8 @@ class Poly:
             else:
                 break
         self.c = coeffs
+        self.deg = len(coeffs)-1
+        self.len = self.deg + 1
         self.content = 'int'
     def __repr__(self):
         def nxt_nz(alist, cur_ix):
@@ -23,7 +27,7 @@ class Poly:
             return str(self.c[0]) # constant (non-zero) polynomial
         else: # second or higher
             # First write the leading term:
-            p = len(self.c) - 1
+            p = self.deg
             if p == 1:
                 if self.c[0] == 1:
                     rep = "x"
@@ -37,7 +41,7 @@ class Poly:
                 elif self.c[0] == -1:
                     rep = "-x**%d" % p
                 else:
-                    rep = "%dx**%d" % (self.c[0], len(self.c)-1)
+                    rep = "%dx**%d" % (self.c[0], self.deg)
             # Find the index of next non-zero term:
             nxt = nxt_nz(self.c, 0)
             while not nxt is None:
@@ -46,7 +50,7 @@ class Poly:
                 else:
                     rep += " + "
                 a = abs(self.c[nxt])
-                p = len(self.c) - nxt - 1
+                p = self.deg - nxt
                 if p == 0:
                     rep += "%d" % a
                 elif p == 1:
@@ -62,7 +66,87 @@ class Poly:
                     
                 nxt = nxt_nz(self.c, nxt)
             return rep
+    def __mul__(self,g):
+        return self.mul(g)
+    def __add__(self,g):
+        return self.add(g)
+    def __neg__(self):
+        return self.neg()
+    def __sub__(self,g):
+        return self.sub(g)
 
+    def mul(self, g):
+        '''fft would be faster but float rounds off, this method is slower
+        but exact!'''
+        # Naive approach
+        P = [0,] * (self.len+g.len-1)
+        for i,x in enumerate(self.c):
+            for j,y in enumerate(g.c):
+                P[i+j] += x*y
+        return Poly(P)
+
+    def add(self, g):
+        nf = self.len
+        ng = g.len
+        N = max(nf, ng)
+        Xf = [0,]*(N-nf) + self.c
+        Xg = [0,]*(N-ng) + g.c
+        S = []
+        for x,y in zip(Xf,Xg):
+            S.append(x + y)
+        return Poly(S)
+
+    def neg(self):
+        return Poly([-x for x in self.c])
+
+    def sub(self, g):
+        return self.add(g.neg())
+
+
+    def gcd(self,g):
+        if self.deg > g.deg:
+            u = self
+            v = g
+        else:
+            u = g
+            v = self
+        while v != [0,]:
+            t = u.div(v)[1]
+            if t.len == 0:
+                return u
+            while t.c[0] == 0:
+                t.pop(0)
+            u = v
+            v = t
+        return u
+
+    def div(self,g):
+        if len(self.c) < len(g.c):
+            return Poly(()), self
+        assert g.c[0] == 1 # This ensures all coefficients of solution are
+                         # integers
+        n = self.len
+        nv = g.len
+        r = list(self.c)
+        q = []
+        for k in range(n-nv+1):
+            qa = r[k]
+            q.append(qa)
+            for j in range(1,nv):
+                r[j+k] -= qa*g.c[j]
+        return Poly(q), Poly(r[(-nv+1):])
+
+    def rem(self,g):
+        return div(self,g)[1]
+
+    def eval(self,x):
+        ans = self.c[0]
+        for c in self.c[1:]:
+            ans = ans * x + c
+        return ans
+
+
+        
 
 class Fraction:
     ### Base methods
