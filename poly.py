@@ -3,9 +3,6 @@ class Poly:
     ### leading coefficient (highest power of x) at position zero.
     def __init__(self, coeffs):
         assert coeffs.__class__ == list or coeffs.__class__ == tuple
-        #for a in coeffs:
-        #    if a.__class__ != int:
-        #        raise TypeError ('Poly only currently implemented for ints')
         while len(coeffs) > 0:
             if coeffs[0] == 0:
                 coeffs.pop(0)
@@ -65,16 +62,8 @@ class Poly:
                     
                 nxt = nxt_nz(self.c, nxt)
             return rep
-    def __mul__(self,g):
-        return self.mul(g)
-    def __add__(self,g):
-        return self.add(g)
-    def __neg__(self):
-        return self.neg()
-    def __sub__(self,g):
-        return self.sub(g)
 
-    def mul(self, g):
+    def __mul__(self, g):
         '''fft would be faster but float rounds off, this method is slower
         but exact!'''
         # Naive approach
@@ -84,7 +73,7 @@ class Poly:
                 P[i+j] += x*y
         return Poly(P)
 
-    def add(self, g):
+    def __add__(self, g):
         nf = self.len
         ng = g.len
         N = max(nf, ng)
@@ -95,10 +84,10 @@ class Poly:
             S.append(x + y)
         return Poly(S)
 
-    def neg(self):
+    def __neg__(self):
         return Poly([-x for x in self.c])
 
-    def sub(self, g):
+    def __sub__(self, g):
         return self.add(g.neg())
 
 
@@ -129,10 +118,7 @@ class Poly:
             if g0 == 1:            
                 qa = r[k]
             else:
-                try:
-                    qa = Fraction(r[k], g0)
-                except TypeError:
-                    qa = r[k] / g0
+                qa = Fraction(r[k], g0)
             q.append(qa)
             for j in range(1,nv):
                 r[j+k] = r[j+k] - g.c[j]*qa
@@ -153,8 +139,21 @@ class Poly:
 class Fraction:
     ### Base methods
     def __init__(self, num, denom):
-        self.n = num
-        self.d = denom
+        if num.__class__ == Fraction:
+            ans = num.__truediv__(denom)
+            self.n = ans.n
+            self.d = ans.d
+        elif denom.__class__ == Fraction and num.__class__ == int:
+            ans = denom.__rmul__(num)
+            self.n = ans.n
+            self.d = ans.d
+        elif denom.__class__ == Fraction and num.__class__ == Fraction:
+            ans = num.__truediv(denom)
+            self.n = ans.n
+            self.d = ans.d
+        else:
+            self.n = num
+            self.d = denom
         self.__reduce__()
     def __repr__(self):
         if self.d == 1:
@@ -176,9 +175,9 @@ class Fraction:
     def __mul__(self, y):
         try:
             ans = Fraction(self.n * y.n, self.d * y.d)
-        except AttributeError: # This is intended for Frac * int
+        except AttributeError:# This is intended for Frac * int
             assert y.__class__ == int
-            ans = Fraction(self.n * y, self.d)
+            return self.__rmul__(y)
         ans.__reduce__()
         return ans
     def __add__(self, y):
@@ -186,7 +185,7 @@ class Fraction:
             ans = Fraction(self.n*y.d + y.n*self.d, self.d * y.d)
         except AttributeError:
             assert y.__class__ == int
-            ans = Fraction(self.n + y*self.d, self.d)
+            return self.__radd__(y)
         ans.__reduce__()
         return ans
     def __sub__(self, y):
